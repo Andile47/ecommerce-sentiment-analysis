@@ -416,3 +416,77 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+analysis_col, result_col = st.columns([1.35, 1])
+
+with analysis_col:
+    st.markdown("<div class='card'><h3 class='section-title'>Analyze a review</h3></div>", unsafe_allow_html=True)
+    with st.form("review_form"):
+        review = st.text_area(
+            label="Product review",
+            placeholder="The product broke after one day and the quality is terrible.",
+            label_visibility="collapsed",
+            height=170,
+        )
+        submitted = st.form_submit_button("Analyze review")
+
+with result_col:
+    st.markdown("<div class='result-card'>", unsafe_allow_html=True)
+    if submitted:
+        if not review.strip():
+            st.warning("Enter a review before analyzing it.")
+        else:
+            try:
+                # Original model call kept exactly as-is.
+                sentiment = predict_sentiment(review)
+                scores = get_sentiment_scores(sentiment)
+                top_label = max(scores, key=scores.get)
+                top_value = int(round(scores[top_label] * 100))
+                color_map = {
+                    "positive": PALETTE["positive"],
+                    "neutral": PALETTE["neutral"],
+                    "negative": PALETTE["negative"],
+                }
+                top_color = color_map.get(top_label, PALETTE["primary"])
+
+                st.markdown(
+                    f"""
+                    <div class='sentiment-badge sentiment-{top_label}'>{top_label.title()}</div>
+                    <div class='result-grid'>
+                        <div class='donut-wrap'>
+                            <div class='donut' style='background: conic-gradient({top_color} 0% {top_value}%, #E7E3DA {top_value}% 100%);'>
+                                <div class='donut-inner'>{top_value}%</div>
+                            </div>
+                        </div>
+                        <div class='score-bars'>
+                            <div class='score-row'>
+                                <span>Positive</span>
+                                <div class='bar-track'><div class='bar-fill bar-positive' style='width: {int(round(scores["positive"] * 100))}%'></div></div>
+                                <span>{int(round(scores["positive"] * 100))}%</span>
+                            </div>
+                            <div class='score-row'>
+                                <span>Neutral</span>
+                                <div class='bar-track'><div class='bar-fill bar-neutral' style='width: {int(round(scores["neutral"] * 100))}%'></div></div>
+                                <span>{int(round(scores["neutral"] * 100))}%</span>
+                            </div>
+                            <div class='score-row'>
+                                <span>Negative</span>
+                                <div class='bar-track'><div class='bar-fill bar-negative' style='width: {int(round(scores["negative"] * 100))}%'></div></div>
+                                <span>{int(round(scores["negative"] * 100))}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.caption("This is a model estimate, not a guaranteed judgment.")
+            except FileNotFoundError as error:
+                st.error(str(error))
+    else:
+        st.markdown(
+            """
+            <div class='empty-state'>Your result will appear here</div>
+            """,
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
+
