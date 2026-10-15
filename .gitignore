@@ -1,6 +1,10 @@
 # Python virtual environment
 .venv/
 
+# Generated model files
+models/
+*.joblib
+
 # Python cache files
 __pycache__/
 *.py[cod]
