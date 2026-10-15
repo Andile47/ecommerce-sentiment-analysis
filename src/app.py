@@ -490,3 +490,25 @@ with result_col:
         )
     st.markdown("</div>", unsafe_allow_html=True)
 
+st.markdown(
+    """
+    <div class='feature-grid'>
+        <div class='feature-card'>
+            <div class='feature-score'>98%</div>
+            <h4>Clear labels</h4>
+            <p>Instant sentiment cues for each review in plain language.</p>
+        </div>
+        <div class='feature-card'>
+            <div class='feature-score'>Live</div>
+            <h4>Instant results</h4>
+            <p>Fast review analysis without leaving the product workflow.</p>
+        </div>
+        <div class='feature-card'>
+            <div class='feature-score'>4x</div>
+            <h4>Built for product feedback</h4>
+            <p>Purpose-built for customer voice, support themes, and feature requests.</p>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
