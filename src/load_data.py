@@ -1,66 +1,60 @@
 
+from pathlib import Path
+
 import pandas as pd
-# Create sample e-commerce customer reviews
-data = {
-    "review": [
-        "The product is amazing and works perfectly",
-        "I love the quality and fast delivery",
-        "The product is okay, nothing special",
-        "Delivery was slow and disappointing",
-        "The item arrived damaged and I am unhappy",
-        "Excellent product, I would buy it again",
-        "The quality is poor for the price",
-        "The product meets my expectations",
-        "Very happy with my purchase",
-        "Terrible experience, I want a refund"
-    ],
-    "sentiment": [
-        "positive",
-        "positive",
-        "neutral",
-        "negative",
-        "negative",
-        "positive",
-        "negative",
-        "neutral",
-        "positive",
-        "negative"
-    ]
-}
-
-# Convert the dictionary into a DataFrame
-df = pd.DataFrame(data)
 
 
-# Display the first five reviews
-print("\nFirst five reviews:")
-print(df.head())
-
-# Show the number of rows and columns
-print("\nDataset shape:")
-print(df.shape)
-
-# Show column names and data types
-print("\nDataset information:")
-df.info()
-
-# Count reviews in each sentiment category
-print("\nSentiment distribution:")
-print(df["sentiment"].value_counts())
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "customer_reviews.csv"
+REQUIRED_COLUMNS = {"review", "sentiment"}
+VALID_SENTIMENTS = {"positive", "negative", "neutral"}
 
 
-# Count reviews in each sentiment category
-sentiment_counts = df["sentiment"].value_counts()
+def load_reviews(csv_path: Path = DEFAULT_DATA_PATH) -> pd.DataFrame:
+    """Load reviews and check that the required columns are present."""
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Review dataset not found: {csv_path}")
 
-# Display the counts
-print("\nSentiment Distribution:")
-print(sentiment_counts)
+    reviews = pd.read_csv(csv_path)
+    missing_columns = REQUIRED_COLUMNS.difference(reviews.columns)
+    if missing_columns:
+        missing = ", ".join(sorted(missing_columns))
+        raise ValueError(f"Dataset is missing required column(s): {missing}")
 
-# Calculate the percentage of each sentiment
-sentiment_percentages = df["sentiment"].value_counts(normalize=True) * 100
+    return reviews
 
-print("\nSentiment Percentages:")
-print(sentiment_percentages.round(1))
 
+def data_quality_report(reviews: pd.DataFrame) -> dict[str, int]:
+    """Count missing data, duplicate review-label pairs, and invalid labels."""
+    review_text = reviews["review"].astype("string").str.strip()
+    labels = reviews["sentiment"].astype("string").str.strip().str.lower()
+    missing_reviews = review_text.isna() | review_text.eq("")
+    missing_labels = labels.isna() | labels.eq("")
+    invalid_labels = ~missing_labels & ~labels.isin(VALID_SENTIMENTS)
+
+    return {
+        "rows": len(reviews),
+        "missing_reviews": int(missing_reviews.sum()),
+        "missing_labels": int(missing_labels.sum()),
+        "duplicate_review_label_pairs": int(
+            reviews.duplicated(subset=["review", "sentiment"]).sum()
+        ),
+        "invalid_labels": int(invalid_labels.sum()),
+    }
+
+
+def main() -> None:
+    reviews = load_reviews()
+    print(f"Loaded {len(reviews)} reviews from {DEFAULT_DATA_PATH}")
+    print("Data quality:")
+    for check, count in data_quality_report(reviews).items():
+        print(f"  {check.replace('_', ' ').title()}: {count}")
+    print("\nFirst five reviews:")
+    print(reviews.head())
+
+
+if __name__ == "__main__":
+    main()
 
 
