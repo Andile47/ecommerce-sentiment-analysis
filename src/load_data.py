@@ -44,5 +44,23 @@ print(df.shape)
 print("\nDataset information:")
 df.info()
 
+# Count reviews in each sentiment category
+print("\nSentiment distribution:")
+print(df["sentiment"].value_counts())
+
+
+# Count reviews in each sentiment category
+sentiment_counts = df["sentiment"].value_counts()
+
+# Display the counts
+print("\nSentiment Distribution:")
+print(sentiment_counts)
+
+# Calculate the percentage of each sentiment
+sentiment_percentages = df["sentiment"].value_counts(normalize=True) * 100
+
+print("\nSentiment Percentages:")
+print(sentiment_percentages.round(1))
+
 
 
