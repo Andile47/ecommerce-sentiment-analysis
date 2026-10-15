@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from predict import predict_sentiment
@@ -25,6 +26,46 @@ def get_sentiment_scores(label: str) -> dict[str, float]:
     if normalized == "negative":
         return {"positive": 0.06, "neutral": 0.11, "negative": 0.83}
     return {"positive": 0.30, "neutral": 0.45, "negative": 0.25}
+
+
+def get_dataset_reviews(uploaded_file) -> list[str]:
+    """Return a list of review strings from a CSV or plain text file."""
+    if uploaded_file is None:
+        return []
+
+    file_name = uploaded_file.name.lower()
+
+    if file_name.endswith(".csv"):
+        df = pd.read_csv(uploaded_file)
+        column_name = None
+        for candidate in ["review", "text", "comment", "reviews", "sentence"]:
+            if candidate in df.columns:
+                column_name = candidate
+                break
+        if column_name is None:
+            if len(df.columns) == 1:
+                column_name = df.columns[0]
+            else:
+                return []
+        return [str(value).strip() for value in df[column_name].dropna() if str(value).strip()]
+
+    if file_name.endswith((".txt", ".md")):
+        content = uploaded_file.read().decode("utf-8", errors="ignore")
+        return [line.strip() for line in content.splitlines() if line.strip()]
+
+    return []
+
+
+def get_sample_reviews_csv() -> str:
+    """Return a sample CSV payload for users to test dataset uploads."""
+    return (
+        "review\n"
+        "The product quality is excellent and delivery was fast.\n"
+        "I am disappointed with the battery life and it feels flimsy.\n"
+        "The packaging was okay, but the product did the job.\n"
+        "This is the best purchase I have made this year.\n"
+        "It broke after a few days and customer support was unhelpful.\n"
+    )
 
 
 st.set_page_config(
@@ -427,14 +468,48 @@ with analysis_col:
             label_visibility="collapsed",
             height=170,
         )
+        dataset = st.file_uploader(
+            "Upload a dataset of reviews",
+            type=["csv", "txt", "md"],
+            help="CSV with a review/text column, or a plain text file with one review per line.",
+        )
+        st.download_button(
+            "Download sample CSV",
+            data=get_sample_reviews_csv(),
+            file_name="sample_reviews.csv",
+            mime="text/csv",
+            help="Download a sample review dataset you can upload to test the batch workflow.",
+        )
         submitted = st.form_submit_button("Analyze review")
 
 with result_col:
     st.markdown("<div class='result-card'>", unsafe_allow_html=True)
     if submitted:
-        if not review.strip():
-            st.warning("Enter a review before analyzing it.")
-        else:
+        dataset_reviews = get_dataset_reviews(dataset)
+        if dataset_reviews:
+            counts = {"positive": 0, "neutral": 0, "negative": 0}
+            reviewed_rows = []
+            for item in dataset_reviews:
+                sentiment = predict_sentiment(item)
+                counts[sentiment] = counts.get(sentiment, 0) + 1
+                reviewed_rows.append({"review": item, "sentiment": sentiment})
+
+            total = len(reviewed_rows)
+            results_df = pd.DataFrame(reviewed_rows)
+            st.success(f"Analyzed {total} reviews from the uploaded dataset.")
+            chart_data = pd.DataFrame(
+                [{"Sentiment": label, "Count": counts.get(label, 0)} for label in ["positive", "neutral", "negative"]]
+            )
+            st.bar_chart(chart_data.set_index("Sentiment"))
+            st.caption("Preview of the first 10 rows")
+            st.dataframe(results_df.head(10), hide_index=True)
+            st.download_button(
+                "Download predictions as CSV",
+                data=results_df.to_csv(index=False),
+                file_name="sentiment_predictions.csv",
+                mime="text/csv",
+            )
+        elif review.strip():
             try:
                 # Original model call kept exactly as-is.
                 sentiment = predict_sentiment(review)
@@ -481,6 +556,8 @@ with result_col:
                 st.caption("This is a model estimate, not a guaranteed judgment.")
             except FileNotFoundError as error:
                 st.error(str(error))
+        else:
+            st.warning("Enter a review or upload a dataset before analyzing it.")
     else:
         st.markdown(
             """
