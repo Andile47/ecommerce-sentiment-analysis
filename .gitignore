@@ -5,6 +5,9 @@
 models/
 *.joblib
 
+# Local review datasets may contain private information
+/data/*.csv
+
 # Python cache files
 __pycache__/
 *.py[cod]
