@@ -396,3 +396,23 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    """
+    <div class='topbar'>
+        <div class='brand'><span class='brand-mark'>S</span>Sentiment Lens</div>
+        <div class='pill-tag'>AI-powered review analysis</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class='hero'>
+        <h1>Know how customers feel about your product</h1>
+        <p>Turn product feedback into clear sentiment signals in seconds.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
